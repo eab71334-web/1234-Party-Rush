@@ -14,6 +14,9 @@ func _ready() -> void:
 	Sound.music()
 	home()
 
+func noop() -> void:
+	pass
+
 func relaunch() -> void:
 	launch(Games.last[0], Games.last[1])
 
@@ -81,7 +84,7 @@ func home() -> void:
 	item(v, "📱  نفس الشاشة", Color("ff5d73"), local, 0.1, 190)
 	item(v, "🌐  لعب جماعي", Color("4da3ff"), online, 0.25, 190)
 	spacer(v)
-	var m = item(v, "🔊 الصوت: شغال", Color("636e72"), func(): pass, 0.4, 90)
+	var m = item(v, "🔊 الصوت: شغال", Color("636e72"), noop, 0.4, 90)
 	m.pressed.connect(func():
 		Sound.music_on = not Sound.music_on
 		m.text = "🔊 الصوت: شغال" if Sound.music_on else "🔇 الصوت: مطفي")
