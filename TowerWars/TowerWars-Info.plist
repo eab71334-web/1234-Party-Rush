@@ -77,6 +77,7 @@
 			
 		</dict>
 	</dict>
-</dict>
+</dict>	<key>NSLocalNetworkUsageDescription</key>
+	<string>تحتاج اللعبة الشبكة المحلية عشان تلعب مع أصدقائك على نفس الواي فاي</string>
 </plist>
 
