@@ -57,6 +57,13 @@ jobs:
         run: godot --headless --import || true
 
       - name: Export APK
-        env:
-          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: /home/runner/debug.keystore
-          GODOT_AN
+        run: |
+          mkdir -p build
+          godot --headless --export-debug "Android" build/TowerWars.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TowerWars-android
+          path: build/TowerWars.apk
+          compression-level: 9
