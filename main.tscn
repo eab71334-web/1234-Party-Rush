@@ -1,6 +1,4 @@
 [gd_scene format=3]
-
-[ext_resource type="Script" path="res://boot.gd" id="1"]
-
-[node name="Boot" type="Control"]
+[ext_resource type="Script" path="res://menu.gd" id="1"]
+[node name="Menu" type="Control"]
 script = ExtResource("1")
