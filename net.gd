@@ -6,6 +6,8 @@ signal game_start(game_id, n, seed_val)
 signal action_received(seat, data)
 signal scores_changed(scores, dones)
 signal disconnected
+signal player_withdrew(seat)
+signal player_left(seat)
 signal failed
 
 var active = false
@@ -99,13 +101,62 @@ func _peer_in(id: int) -> void:
 			begin_voting.rpc()
 
 func _peer_out(id: int) -> void:
-	if not is_host:
+	if not is_host or not seats.has(id):
 		return
+	var left_seat = seats[id]
 	seats.erase(id)
 	if phase == "lobby":
 		sync_lobby.rpc(seats.size())
-	else:
+		return
+	if seats.size() < 2:
 		disconnected.emit()
+		return
+	var ids = seats.keys()
+	ids.sort_custom(func(a, b): return seats[a] < seats[b])
+	var newseats = {}
+	var k = 0
+	for pid in ids:
+		newseats[pid] = k
+		k += 1
+	seats = newseats
+	count = seats.size()
+	votes = {}
+	for pid in ids:
+		if pid != 1:
+			reseat.rpc_id(pid, seats[pid], count)
+	announce_left.rpc(left_seat)
+	sync_votes.rpc(votes)
+
+@rpc("authority", "call_remote", "reliable")
+func reseat(seat: int, n: int) -> void:
+	my_seat = seat
+	count = n
+	votes = {}
+
+@rpc("authority", "call_local", "reliable")
+func announce_left(seat: int) -> void:
+	votes = {}
+	player_left.emit(seat)
+
+func withdraw() -> void:
+	if not active:
+		return
+	if is_host:
+		announce_withdraw.rpc(0)
+	else:
+		submit_withdraw.rpc_id(1)
+
+@rpc("any_peer", "call_remote", "reliable")
+func submit_withdraw() -> void:
+	if not is_host:
+		return
+	var sid = multiplayer.get_remote_sender_id()
+	if seats.has(sid):
+		announce_withdraw.rpc(seats[sid])
+
+@rpc("authority", "call_local", "reliable")
+func announce_withdraw(seat: int) -> void:
+	player_withdrew.emit(seat)
 
 func _srv_lost() -> void:
 	if active:

@@ -113,6 +113,10 @@ func end_round() -> void:
 func on_end() -> void:
 	pass
 
+func on_abort() -> void:
+	running = false
+	decided = true
+
 func _scores(sc: Dictionary, dn: Dictionary) -> void:
 	for s in sc.keys():
 		if s < pills.size():

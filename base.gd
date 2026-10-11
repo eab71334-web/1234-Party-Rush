@@ -17,7 +17,8 @@ func _ready() -> void:
 	rng.seed = Net.seed_val if online else randi()
 	if online:
 		Net.action_received.connect(_net_action)
-		Net.disconnected.connect(_net_lost)
+		Net.player_withdrew.connect(_withdrew)
+		Net.player_left.connect(_left)
 	st = Games.safe_top()
 	var g = ["", "", "", 1, 1, "6c5ce7", "2d1b69", ""]
 	if Games.last.size() > 0:
@@ -108,11 +109,28 @@ func _process(_d: float) -> void:
 	if not aq.is_empty():
 		pump()
 
-func _net_lost() -> void:
-	say(Games.L("انقطع الاتصال", "Connection lost"), Color("ff7675"))
-	await wait(1.5)
-	Net.close()
-	get_tree().reload_current_scene()
+func on_abort() -> void:
+	pass
+
+func _withdrew(seat: int) -> void:
+	if over:
+		return
+	over = true
+	on_abort()
+	say(Games.PN[seat] + " " + Games.L("انسحب من اللعبة", "withdrew from the game"), Color("ffa502"))
+	await wait(2.5)
+	if is_inside_tree():
+		Games.restart_req.emit()
+
+func _left(seat: int) -> void:
+	if over:
+		return
+	over = true
+	on_abort()
+	say(Games.PN[seat] + " " + Games.L("غادر الغرفة", "left the room"), Color("ffa502"))
+	await wait(2.5)
+	if is_inside_tree():
+		Games.restart_req.emit()
 
 func landscape() -> void:
 	want_landscape = true

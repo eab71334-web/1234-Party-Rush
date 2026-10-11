@@ -7,6 +7,10 @@ var dir = 1
 var choosing = -1
 var hand_rects = []
 var pile_rect = Rect2()
+var drew = false
+var drawn_idx = -1
+var call_flag = false
+var last_rect = Rect2()
 
 func make_deck() -> Array:
 	var d = []
@@ -30,6 +34,10 @@ func is_wild(c) -> bool:
 	return c[0] == 4
 
 func playable(c) -> bool:
+	if c[1] == "d4":
+		for h in hands[turn]:
+			if h[0] == cur:
+				return false
 	return c[0] == 4 or c[0] == cur or c[1] == discard.back()[1]
 
 func cur_color() -> Color:
@@ -96,6 +104,8 @@ func give(s: int, n: int) -> void:
 			hands[s].append(c)
 
 func advance(n: int) -> void:
+	drew = false
+	drawn_idx = -1
 	turn = posmod(turn + dir * n, players)
 	show_turn()
 
@@ -104,20 +114,38 @@ func on_action(seat: int, d: Dictionary) -> void:
 		return
 	var t = d.get("t", "")
 	if t == "d":
-		give(seat, 1)
-		Sound.tone(500, 0.06, 2)
-		advance(1)
+		if drew:
+			advance(1)
+		else:
+			var c = draw_one()
+			Sound.tone(500, 0.06, 2)
+			if c == null:
+				advance(1)
+			else:
+				hands[seat].append(c)
+				if playable(c):
+					drew = true
+					drawn_idx = hands[seat].size() - 1
+					say(Games.L("العب الورقة أو اضغط السحب للتمرير", "Play it, or tap the pile to pass"), col(seat))
+				else:
+					advance(1)
 	elif t == "p":
 		var i = int(d.get("i", -1))
 		if i < 0 or i >= hands[seat].size():
+			return
+		if drew and i != drawn_idx:
 			return
 		var c = hands[seat][i]
 		if not playable(c):
 			return
 		hands[seat].remove_at(i)
 		discard.append(c)
+		drew = false
 		var steps = after_play(c, seat, int(d.get("c", 0)))
 		Sound.tone(700, 0.08, 2)
+		if hands[seat].size() == 1 and not bool(d.get("u", false)):
+			give(seat, 2)
+			Sound.lose()
 		if hands[seat].is_empty():
 			finish("فاز " + Games.PN[seat], col(seat))
 			body.queue_redraw()
@@ -168,12 +196,17 @@ func paint() -> void:
 	var mine = (turn == m)
 	var any = false
 	for i in n:
-		var ok = playable(hand[i])
+		var ok = playable(hand[i]) and (not drew or i == drawn_idx)
 		if ok:
 			any = true
 		var lift = 24.0 if (mine and ok) else 0.0
 		draw_c(Rect2(x0 + sp * i, y0 - lift, cw, ch), hand[i], true, mine and not ok)
 		hand_rects.append(Rect2(x0 + sp * i, y0 - 24.0, sp if i < n - 1 else cw, ch + 24.0))
+	last_rect = Rect2()
+	if mine and hand.size() == 2:
+		last_rect = Rect2(W - 230, H * 0.5 - 40, 200, 80)
+		body.draw_style_box(Games.style(Color("ff9f1a") if call_flag else Color("57606f"), 30, 5), last_rect)
+		body.draw_string(f, last_rect.position + Vector2(0, 52), Games.L("آخر ورقة!", "LAST!"), HORIZONTAL_ALIGNMENT_CENTER, 200, 34, Color.WHITE)
 	if mine and not any:
 		body.draw_arc(pile_rect.get_center(), cw * 0.8, 0, TAU, 28, Color(1, 1, 0.3, 0.8), 6.0)
 	if choosing >= 0:
@@ -194,10 +227,15 @@ func inp(e: InputEvent) -> void:
 			if p.distance_to(Vector2(W / 2.0 + (i - 1.5) * 150.0, H * 0.45)) < 70.0:
 				var idx = choosing
 				choosing = -1
-				act({"t": "p", "i": idx, "c": i})
+				act({"t": "p", "i": idx, "c": i, "u": call_flag})
+				call_flag = false
 				body.queue_redraw()
 				return
 		choosing = -1
+		body.queue_redraw()
+		return
+	if last_rect.size.x > 0 and last_rect.has_point(p):
+		call_flag = not call_flag
 		body.queue_redraw()
 		return
 	if pile_rect.grow(30).has_point(p):
@@ -206,12 +244,13 @@ func inp(e: InputEvent) -> void:
 	var hand = hands[me()]
 	for i in range(hand_rects.size() - 1, -1, -1):
 		if hand_rects[i].has_point(p):
-			if not playable(hand[i]):
+			if not playable(hand[i]) or (drew and i != drawn_idx):
 				Sound.tone(150, 0.1, 1)
 				return
 			if is_wild(hand[i]):
 				choosing = i
 				body.queue_redraw()
 				return
-			act({"t": "p", "i": i})
+			act({"t": "p", "i": i, "u": call_flag})
+			call_flag = false
 			return

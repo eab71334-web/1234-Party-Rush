@@ -283,8 +283,11 @@ func back(node: Control) -> void:
 	b.position = Vector2(20, safe_top())
 	b.size = Vector2(90, 90)
 	b.pressed.connect(func():
-		Net.close()
-		get_tree().reload_current_scene())
+		if Net.active:
+			Net.withdraw()
+			restart_req.emit()
+		else:
+			get_tree().reload_current_scene())
 	node.add_child(b)
 
 func ell(cx: float, cy: float, rx2: float, ry2: float, n: int = 18) -> PackedVector2Array:

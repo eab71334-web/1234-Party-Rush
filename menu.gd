@@ -18,6 +18,7 @@ func _ready() -> void:
 	Net.game_start.connect(on_game_start)
 	Net.disconnected.connect(on_lost)
 	Net.failed.connect(on_failed)
+	Net.player_left.connect(on_player_left)
 	Sound.music()
 	if Net.active and Net.phase != "lobby":
 		vote_screen()
@@ -293,6 +294,11 @@ func vote_screen() -> void:
 	v.add_child(vote_row)
 	on_votes(Net.votes)
 	back_btn(v, leave)
+	var xb = Games.icon_btn("close", Color("e17055"), 90)
+	xb.position = Vector2(20, Games.safe_top())
+	xb.size = Vector2(90, 90)
+	xb.pressed.connect(leave)
+	page.add_child(xb)
 
 func my_vote(g: Array) -> void:
 	Net.cast_vote(g[0])
@@ -309,6 +315,13 @@ func on_votes(votes: Dictionary) -> void:
 		p.custom_minimum_size = Vector2(56, 56)
 		p.add_theme_stylebox_override("panel", Games.style(Games.PC[i] if votes.has(i) else Color(1, 1, 1, 0.15), 28, 4))
 		vote_row.add_child(p)
+
+func on_player_left(seat: int) -> void:
+	if cur_screen == "vote":
+		var nm = Games.PN[seat]
+		vote_screen()
+		if is_instance_valid(vote_note):
+			vote_note.text = nm + " " + Games.L("غادر الغرفة", "left the room")
 
 func leave() -> void:
 	Net.close()
@@ -362,7 +375,7 @@ func roulette(game_id: String, n: int) -> void:
 
 func on_lost() -> void:
 	Net.close()
-	var v = screen(Games.L("انقطع الاتصال", "Connection lost"))
+	var v = screen(Games.L("انتهت الجلسة", "Session ended"))
 	spacer(v)
 	back_btn(v, home)
 
