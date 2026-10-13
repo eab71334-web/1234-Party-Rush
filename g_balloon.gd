@@ -13,7 +13,7 @@ func setup() -> void:
 	area.add_child(hb)
 	var p = Games.btn(Games.L("انفخ", "PUMP"), Color("ff6b9d"), 150, 54)
 	p.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	p.button_down.connect(pump)
+	p.button_down.connect(do_pump)
 	hb.add_child(p)
 	var s = Games.btn(Games.L("احفظ", "BANK"), Color("2ed573"), 150, 54)
 	s.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -24,7 +24,7 @@ func setup() -> void:
 func hint_text() -> String:
 	return Games.L("انفخ واحفظ قبل ما ينفجر!", "Pump, but bank before it pops!")
 
-func pump() -> void:
+func do_pump() -> void:
 	if not running:
 		return
 	pumps += 1
