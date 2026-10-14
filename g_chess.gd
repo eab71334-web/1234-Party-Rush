@@ -115,7 +115,7 @@ func ok(v: Vector2i) -> bool:
 func hostile(pc, defender: int) -> bool:
 	return pc[0] != defender and not dead.has(pc[0])
 
-func ep_entry(sq: Vector2i, o: int):
+func ep_entry(sq: Vector2i, o: int) -> Variant:
 	for e in eps:
 		if e[0] == sq and e[2] != o:
 			return e
@@ -237,7 +237,7 @@ func attacked(sq: Vector2i, defender: int, bd: Dictionary) -> bool:
 				return true
 	return false
 
-func king_pos(o: int, bd: Dictionary):
+func king_pos(o: int, bd: Dictionary) -> Variant:
 	for k in bd.keys():
 		if bd[k][0] == o and bd[k][1] == "K":
 			return k
